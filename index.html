@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match-3 Group Finder - Test Task</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Match-3 Group Finder</h1>
+    <p class="subtitle">Click on any cell to remove its connected group</p>
+
+    <div class="game-area">
+      <div class="grid-wrapper">
+        <div id="gameGrid" class="grid"></div>
+      </div>
+
+      <div class="info-panel">
+        <div class="info-card">
+          <h3>Grid Size</h3>
+          <div class="value" id="gridSize">10×10</div>
+        </div>
+
+        <div class="info-card">
+          <h3>Last Click</h3>
+          <div class="value" id="selectedCell">-</div>
+        </div>
+
+        <div class="info-card">
+          <h3>Last Removed Group Size</h3>
+          <div class="value" id="groupSize">0</div>
+        </div>
+
+        <div class="info-card">
+          <h3>Total Removed</h3>
+          <div class="value" id="removedCount">0</div>
+        </div>
+
+        <div class="controls">
+          <button class="primary" id="newGridBtn">New Grid</button>
+          <button class="secondary" id="clearBtn">Clear Selection</button>
+        </div>
+
+        <div class="algorithm-info">
+          <strong>Algorithm:</strong> DFS (Depth-First Search)<br>
+          <strong>Complexity:</strong> O(n) time, O(n) space
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

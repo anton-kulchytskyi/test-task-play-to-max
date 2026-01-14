@@ -1,0 +1,16 @@
+{
+  "name": "test-task-play-to-max",
+  "version": "1.0.0",
+  "description": "Match-3 connected components finder",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx http-server -p 8000"
+  },
+  "keywords": [
+    "match-3",
+    "algorithm",
+    "dfs",
+    "game"
+  ],
+  "author": "Anton Kulchytskyi"
+}
