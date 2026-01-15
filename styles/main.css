@@ -43,7 +43,6 @@ h1 {
   margin-top: 20px;
 }
 
-/* ---------- TOP INFO PANEL (now above the grid) ---------- */
 .info-panel {
   width: 100%;
   display: grid;
@@ -74,48 +73,22 @@ h1 {
   color: #111827;
 }
 
-/* .controls {
-  grid-column: span 3;
-  display: flex;
-  gap: 10px;
-  align-items: stretch;
-}
-
-.controls button {
-  flex: 1;
-  padding: 10px 14px;
-} */
-
-/* .algorithm-info {
-  grid-column: span 6;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 12px;
-  margin-top: 0;
-  font-size: 12px;
-  color: #6b7280;
-  line-height: 1.6;
-} */
-
-/* Optional helper if you later remove inline styles from Grid Size row */
 .grid-size-row {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-/* Inputs / select styling (works even if you still have inline width/padding) */
 input[type='number'] {
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 4px;
+  padding: 6px 8px;
   outline: none;
   background: white;
 }
 
 input[type='number']:focus {
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
 }
 
 .control-select {
@@ -132,12 +105,11 @@ input[type='number']:focus {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.18);
 }
 
-/* ---------- GRID ---------- */
 .grid-wrapper {
   width: 100%;
   display: flex;
   justify-content: center;
-  overflow: auto; /* for very large grids */
+  overflow: auto;
 }
 
 .grid {
@@ -149,7 +121,7 @@ input[type='number']:focus {
   background: #d1d5db;
   border-radius: 8px;
   border: 2px solid #e5e7eb;
-  width: max-content; /* important: lets wrapper scroll horizontally */
+  width: max-content;
 }
 
 .cell {
@@ -188,7 +160,16 @@ input[type='number']:focus {
   background: #e5e7eb;
 }
 
-/* ---------- BUTTONS ---------- */
+.cell.visited {
+  outline: 2px solid rgba(59, 130, 246, 0.9);
+  outline-offset: -2px;
+}
+
+.cell.in-group {
+  background: #fbbf24;
+  color: #78350f;
+}
+
 button {
   padding: 12px 20px;
   border: none;
@@ -219,7 +200,6 @@ button.secondary:hover {
   background: #d1d5db;
 }
 
-/* ---------- HEADER ROW (4 columns) ---------- */
 .header-row {
   display: grid;
   grid-template-columns: 4fr 0.5fr 3fr 3fr;
@@ -236,7 +216,6 @@ button.secondary:hover {
   margin: 0;
 }
 
-/* buttons compact */
 .header-row .controls {
   display: flex;
   gap: 10px;
@@ -247,7 +226,6 @@ button.secondary:hover {
   white-space: nowrap;
 }
 
-/* algorithm info compact */
 .header-row .algorithm-info {
   margin: 0;
   padding: 10px 12px;
