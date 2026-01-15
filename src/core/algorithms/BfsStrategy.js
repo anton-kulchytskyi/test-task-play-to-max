@@ -1,43 +1,43 @@
 export default class BfsStrategy {
   findGroup(grid, startRow, startCol) {
     const startCell = grid.getCell(startRow, startCol);
-    if (!startCell || !startCell.element) {
-      return [];
-    }
+    if (!startCell || !startCell.element) return { group: [], steps: [] };
 
-    const targetElement = startCell.element;
-    const group = [];
-    const queue = [startCell];
+    const target = startCell.element;
     const visited = this.createVisitedArray(grid.rows, grid.cols);
+    const queue = [{ row: startRow, col: startCol }];
+    const group = [];
+    const steps = [];
 
     visited[startRow][startCol] = true;
-    group.push(startCell);
 
     while (queue.length > 0) {
-      const currentCell = queue.shift();
-      const { row, col } = currentCell;
+      const { row, col } = queue.shift();
+      const cell = grid.getCell(row, col);
+
+      steps.push({ type: 'visit', cell });
+
+      if (!cell || !cell.element || !cell.matches(target)) continue;
+
+      group.push(cell);
+      steps.push({ type: 'add', cell });
 
       const neighbors = [
-        { r: row - 1, c: col },
-        { r: row + 1, c: col },
-        { r: row, c: col - 1 },
-        { r: row, c: col + 1 },
+        { row: row - 1, col },
+        { row: row + 1, col },
+        { row, col: col - 1 },
+        { row, col: col + 1 },
       ];
 
-      for (const neighborPos of neighbors) {
-        const { r, c } = neighborPos;
-
-        if (grid.isValidPosition(r, c) && !visited[r][c]) {
-          const neighborCell = grid.getCell(r, c);
-          if (neighborCell && neighborCell.matches(targetElement)) {
-            visited[r][c] = true;
-            group.push(neighborCell);
-            queue.push(neighborCell);
-          }
+      for (const n of neighbors) {
+        if (grid.isValidPosition(n.row, n.col) && !visited[n.row][n.col]) {
+          visited[n.row][n.col] = true;
+          queue.push(n);
         }
       }
     }
-    return group;
+
+    return { group, steps };
   }
 
   createVisitedArray(rows, cols) {

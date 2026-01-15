@@ -41,7 +41,7 @@ export default class Game {
       .addEventListener('change', (e) => this.changeGridSize());
   }
 
-  handleGridClick(e) {
+  async handleGridClick(e) {
     const cellElement = e.target.closest('.cell');
     if (!cellElement) return;
 
@@ -54,19 +54,27 @@ export default class Game {
       return;
     }
 
-    this.currentGroup = this.groupFinder.findGroup(this.grid, row, col);
+    this.grid.clearHighlights();
 
-    if (this.currentGroup.length === 0) return;
+    const { group, steps } = this.groupFinder.findGroup(this.grid, row, col);
+    if (group.length === 0) return;
 
-    this.grid.highlightGroup(this.currentGroup);
-    this.updateInfoPanel(row, col, cell.element, this.currentGroup.length);
+    this.updateInfoPanel(row, col, cell.element, group.length);
 
-    setTimeout(() => {
-      this.grid.removeGroup(this.currentGroup);
-      this.totalRemoved += this.currentGroup.length;
-      document.getElementById('removedCount').textContent = this.totalRemoved;
-      this.currentGroup = [];
-    }, 500);
+    const stepDelay = 20;
+    for (const step of steps) {
+      if (!step.cell) continue;
+      if (step.type === 'visit') step.cell.markVisited();
+      if (step.type === 'add') step.cell.markInGroup();
+      await this.delay(stepDelay);
+    }
+
+    await this.delay(250);
+
+    this.grid.removeGroup(group);
+    this.totalRemoved += group.length;
+    document.getElementById('removedCount').textContent = this.totalRemoved;
+    this.currentGroup = [];
   }
 
   createNewGrid() {
@@ -117,8 +125,8 @@ export default class Game {
     let rows = parseInt(document.getElementById('gridRowsInput').value);
     let cols = parseInt(document.getElementById('gridColsInput').value);
 
-    rows = Math.max(5, Math.min(25, rows));
-    cols = Math.max(5, Math.min(25, cols));
+    rows = Math.max(5, Math.min(45, rows));
+    cols = Math.max(5, Math.min(45, cols));
 
     document.getElementById('gridRowsInput').value = rows;
     document.getElementById('gridColsInput').value = cols;
@@ -129,5 +137,9 @@ export default class Game {
     this.init(rows, cols);
     this.clearInfoPanel();
     document.getElementById('removedCount').textContent = '0';
+  }
+
+  delay(ms) {
+    return new Promise((r) => setTimeout(r, ms));
   }
 }

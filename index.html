@@ -8,14 +8,28 @@
   </head>
   <body>
     <div class="container">
-      <h1>Match-3 Group Finder</h1>
-      <p class="subtitle">Click on any cell to remove its connected group</p>
-
-      <div class="game-area">
-        <div class="grid-wrapper">
-          <div id="gameGrid" class="grid"></div>
+      <div class="header-row">
+        <div class="header-title">
+          <h1>Match-3 Group Finder</h1>
+          <p class="subtitle">
+            Click on any cell to remove its connected group
+          </p>
         </div>
 
+        <div class="header-spacer"></div>
+
+        <div class="controls">
+          <button class="primary" id="newGridBtn">New Grid</button>
+          <button class="secondary" id="clearBtn">Clear Selection</button>
+        </div>
+
+        <div class="algorithm-info">
+          <strong>Algorithm:</strong><span id="algorithm-info"> DFS</span><br />
+          <strong>Complexity:</strong> O(n) time, O(n) space
+        </div>
+      </div>
+
+      <div class="game-area">
         <div class="info-panel">
           <div class="info-card">
             <h3>Grid Size</h3>
@@ -24,23 +38,21 @@
                 type="number"
                 id="gridRowsInput"
                 min="5"
-                max="25"
+                max="45"
                 value="10"
                 placeholder="Rows"
-                style="width: 50px; padding: 5px"
               />
               <span>×</span>
               <input
                 type="number"
                 id="gridColsInput"
                 min="5"
-                max="25"
+                max="45"
                 value="10"
                 placeholder="Cols"
-                style="width: 50px; padding: 5px"
               />
             </div>
-            <div class="value" id="gridSize">10×10</div>
+            <div class="value" id="gridSize" hidden>10×10</div>
           </div>
 
           <div class="info-card">
@@ -67,16 +79,9 @@
             <div class="value" id="removedCount">0</div>
           </div>
 
-          <div class="controls">
-            <button class="primary" id="newGridBtn">New Grid</button>
-            <button class="secondary" id="clearBtn">Clear Selection</button>
-          </div>
-
-          <div class="algorithm-info">
-            <strong>Algorithm:</strong><span id="algorithm-info"> DFS</span
-            ><br />
-            <strong>Complexity:</strong> O(n) time, O(n) space
-          </div>
+        </div>
+        <div class="grid-wrapper">
+          <div id="gameGrid" class="grid"></div>
         </div>
       </div>
     </div>

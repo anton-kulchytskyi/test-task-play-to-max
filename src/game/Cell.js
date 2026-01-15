@@ -4,7 +4,7 @@ export default class Cell {
     this.row = row;
     this.col = col;
     this.element = element;
-    
+
     this.render();
   }
 
@@ -23,17 +23,21 @@ export default class Cell {
     }
   }
 
-  highlight() {
-    this.cellElement.classList.add('highlighted');
-  }
-
-  removeHighlight() {
-    this.cellElement.classList.remove('highlighted');
-  }
-
   remove() {
     this.element = null;
     this.cellElement.textContent = '';
     this.cellElement.classList.add('empty');
+  }
+
+  markVisited() {
+    this.cellElement.classList.add('visited');
+  }
+
+  markInGroup() {
+    this.cellElement.classList.add('in-group');
+  }
+
+  clearMarks() {
+    this.cellElement.classList.remove('visited', 'in-group', 'highlighted');
   }
 }

@@ -38,8 +38,20 @@ export default class Grid {
         cellElement.dataset.row = row;
         cellElement.dataset.col = col;
 
-        const randomElement =
-          this.elements[Math.floor(Math.random() * this.elements.length)];
+        const fromLeft = col > 0 ? cells[row][col - 1]?.element : null;
+        const fromTop = row > 0 ? cells[row - 1][col]?.element : null;
+
+        const roll = Math.random();
+
+        let randomElement;
+        if (roll < 0.55 && fromLeft) {
+          randomElement = fromLeft;
+        } else if (roll < 0.85 && fromTop) {
+          randomElement = fromTop;
+        } else {
+          randomElement =
+            this.elements[Math.floor(Math.random() * this.elements.length)];
+        }
 
         cells[row][col] = new Cell(cellElement, row, col, randomElement);
         this.gridElement.appendChild(cellElement);
@@ -70,15 +82,13 @@ export default class Grid {
   clearHighlights() {
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
-        this.cells[row][col].removeHighlight();
+        this.cells[row][col].clearMarks();
       }
     }
   }
 
   highlightGroup(group) {
     this.clearHighlights();
-    group.forEach((cell) => {
-      cell.highlight();
-    });
+    group.forEach((cell) => cell.markInGroup());
   }
 }
