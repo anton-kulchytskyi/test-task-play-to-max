@@ -5,7 +5,7 @@ export default class Grid {
     gridElement,
     rows = 10,
     cols = 10,
-    elements = ['A', 'B', 'C', 'D', 'E']
+    elements = ['A', 'B', 'C', 'D']
   ) {
     this.gridElement = gridElement;
     this.rows = rows;
@@ -19,6 +19,11 @@ export default class Grid {
   setupGrid() {
     this.gridElement.style.setProperty('--grid-rows', this.rows);
     this.gridElement.style.setProperty('--grid-cols', this.cols);
+    const cellSize = Math.max(20, 45 - this.cols);
+    const fontSize = Math.max(12, cellSize * 0.5);
+
+    this.gridElement.style.setProperty('--cell-size', `${cellSize}px`);
+    this.gridElement.style.setProperty('--font-size', `${fontSize}px`);
     this.gridElement.innerHTML = '';
   }
 
