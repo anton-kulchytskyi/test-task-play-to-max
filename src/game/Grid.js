@@ -1,12 +1,7 @@
 import Cell from './Cell.js';
 
 export default class Grid {
-  constructor(
-    gridElement,
-    rows = 10,
-    cols = 10,
-    elements = ['A', 'B', 'C', 'D']
-  ) {
+  constructor(gridElement, rows = 10, cols = 10, elements = ['A', 'B', 'C']) {
     this.gridElement = gridElement;
     this.rows = rows;
     this.cols = cols;

@@ -117,8 +117,8 @@ export default class Game {
     let rows = parseInt(document.getElementById('gridRowsInput').value);
     let cols = parseInt(document.getElementById('gridColsInput').value);
 
-    rows = Math.max(5, Math.min(25, rows));
-    cols = Math.max(5, Math.min(25, cols));
+    rows = Math.max(5, Math.min(45, rows));
+    cols = Math.max(5, Math.min(45, cols));
 
     document.getElementById('gridRowsInput').value = rows;
     document.getElementById('gridColsInput').value = cols;
