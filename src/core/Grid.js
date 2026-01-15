@@ -1,12 +1,17 @@
 import Cell from './Cell.js';
 
 export default class Grid {
-  constructor(gridElement, rows = 10, cols = 10, elements = ['A', 'B', 'C', 'D', 'E']) {
+  constructor(
+    gridElement,
+    rows = 10,
+    cols = 10,
+    elements = ['A', 'B', 'C', 'D', 'E']
+  ) {
     this.gridElement = gridElement;
     this.rows = rows;
     this.cols = cols;
     this.elements = elements;
-    
+
     this.setupGrid();
     this.cells = this.initializeCells();
   }
@@ -19,7 +24,7 @@ export default class Grid {
 
   initializeCells() {
     const cells = [];
-    
+
     for (let row = 0; row < this.rows; row++) {
       cells[row] = [];
       for (let col = 0; col < this.cols; col++) {
@@ -27,16 +32,15 @@ export default class Grid {
         cellElement.classList.add('cell');
         cellElement.dataset.row = row;
         cellElement.dataset.col = col;
-        
-        const randomElement = this.elements[
-          Math.floor(Math.random() * this.elements.length)
-        ];
-        
+
+        const randomElement =
+          this.elements[Math.floor(Math.random() * this.elements.length)];
+
         cells[row][col] = new Cell(cellElement, row, col, randomElement);
         this.gridElement.appendChild(cellElement);
       }
     }
-    
+
     return cells;
   }
 
@@ -52,11 +56,8 @@ export default class Grid {
   }
 
   removeGroup(group) {
-    group.forEach(cell => {
-      const gridCell = this.getCell(cell.row, cell.col);
-      if (gridCell) {
-        gridCell.remove();
-      }
+    group.forEach((cell) => {
+      cell.remove();
     });
     this.clearHighlights();
   }
@@ -71,11 +72,8 @@ export default class Grid {
 
   highlightGroup(group) {
     this.clearHighlights();
-    group.forEach(cell => {
-      const gridCell = this.getCell(cell.row, cell.col);
-      if (gridCell) {
-        gridCell.highlight();
-      }
+    group.forEach((cell) => {
+      cell.highlight();
     });
   }
 }

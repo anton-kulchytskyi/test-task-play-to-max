@@ -1,15 +1,17 @@
 import Grid from './core/Grid.js';
-import DFSGroupFinder from './core/algorithms/DFS.js';
+import DfsStrategy from './core/algorithms/DfsStrategy.js';
+import BfsStrategy from './core/algorithms/BfsStrategy.js';
+
+const strategies = {
+  DFS: DfsStrategy,
+  BFS: BfsStrategy,
+};
 
 const gridElement = document.getElementById('gameGrid');
 let grid = new Grid(gridElement, 10, 10);
-let groupFinder = new DFSGroupFinder(grid);
+let currentStrategyName = 'DFS';
+let groupFinder = new strategies[currentStrategyName]();
 let currentGroup = [];
-
-
-
-
-
 
 let totalRemoved = 0;
 
@@ -19,6 +21,9 @@ gridElement.addEventListener('click', handleGridClick);
 
 document.getElementById('newGridBtn').addEventListener('click', createNewGrid);
 document.getElementById('clearBtn').addEventListener('click', clearSelection);
+document
+  .getElementById('algorithmSelector')
+  .addEventListener('change', selectAlgorithm);
 
 function handleGridClick(e) {
   const cellElement = e.target.closest('.cell');
@@ -33,7 +38,7 @@ function handleGridClick(e) {
     return;
   }
 
-  currentGroup = groupFinder.findConnectedGroup(row, col);
+  currentGroup = groupFinder.findGroup(grid, row, col);
 
   if (currentGroup.length === 0) return;
 
@@ -53,7 +58,7 @@ function handleGridClick(e) {
 
 function createNewGrid() {
   grid = new Grid(gridElement, 10, 10);
-  groupFinder = new DFSGroupFinder(grid);
+  groupFinder = new strategies[currentStrategyName]();
   currentGroup = [];
   totalRemoved = 0;
 
@@ -66,6 +71,15 @@ function clearSelection() {
   grid.clearHighlights();
   currentGroup = [];
   clearInfoPanel();
+}
+
+function selectAlgorithm(e) {
+  currentStrategyName = e.target.value;
+  groupFinder = new strategies[currentStrategyName]();
+  document.getElementById(
+    'algorithm-info'
+  ).textContent = ` ${currentStrategyName}`;
+  createNewGrid();
 }
 
 function updateInfoPanel(row, col, element, groupSize) {
