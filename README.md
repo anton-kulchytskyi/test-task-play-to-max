@@ -31,3 +31,4 @@ Simply open `index.html` in your browser.
 ## TODO
 
 - Add detailed instructions and comments
+- Refactor logic and UI

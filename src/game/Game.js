@@ -1,4 +1,5 @@
 import Grid from '../game/Grid.js';
+
 export default class Game {
   constructor(gridElement, strategies, initialRows = 10, initialCols = 10) {
     this.gridElement = gridElement;
@@ -7,14 +8,50 @@ export default class Game {
     this.currentGroup = [];
     this.totalRemoved = 0;
 
+    this.totalSearchMs = 0;
+    this.lastSearchMs = null;
+    this.lastGroupSize = null;
+    this.lastResults = [];
+    this.sessionFinished = false;
+
     this.init(initialRows, initialCols);
     this.setupEventListeners();
   }
 
-  init(rows, cols) {
+  async init(rows, cols) {
     this.grid = new Grid(this.gridElement, rows, cols);
     this.groupFinder = new this.strategies[this.currentStrategyName]();
-    this.updateGridSizeDisplay();
+    this.setupGridSizeSelects(rows, cols);
+
+    this.grid.clearHighlights();
+
+    this.totalSearchMs = 0;
+    this.lastSearchMs = null;
+    this.lastGroupSize = null;
+    this.renderMetrics();
+
+    this.sessionFinished = false;
+
+    if (typeof this.groupFinder.buildConnections === 'function') {
+      this.isIndexing = true;
+
+      const t0 = performance.now();
+      const { steps } = this.groupFinder.buildConnections(this.grid, {
+        collectSteps: true,
+      });
+      const indexMs = performance.now() - t0;
+
+      this.totalSearchMs += indexMs;
+      this.renderMetrics();
+
+      for (const step of steps) {
+        if (step.type === 'visit') step.cell?.markVisited();
+        await this.delay(2);
+      }
+
+      this.grid.clearHighlights();
+      this.isIndexing = false;
+    }
   }
 
   setupEventListeners() {
@@ -25,23 +62,39 @@ export default class Game {
       .addEventListener('click', () => this.createNewGrid());
 
     document
-      .getElementById('clearBtn')
-      .addEventListener('click', () => this.clearSelection());
-
-    document
       .getElementById('algorithmSelector')
       .addEventListener('change', (e) => this.selectAlgorithm(e));
 
     document
-      .getElementById('gridRowsInput')
-      .addEventListener('change', (e) => this.changeGridSize());
+      .getElementById('gridRowsSelect')
+      .addEventListener('change', () => this.changeGridSize());
 
     document
-      .getElementById('gridColsInput')
-      .addEventListener('change', (e) => this.changeGridSize());
+      .getElementById('gridColsSelect')
+      .addEventListener('change', () => this.changeGridSize());
+  }
+
+  setupGridSizeSelects(initialRows, initialCols) {
+    const rowsSelect = document.getElementById('gridRowsSelect');
+    const colsSelect = document.getElementById('gridColsSelect');
+    if (!rowsSelect || !colsSelect) return;
+
+    const options = [];
+    for (let v = 5; v <= 45; v += 5) options.push(v);
+
+    rowsSelect.innerHTML = options
+      .map((v) => `<option value="${v}">${v}</option>`)
+      .join('');
+    colsSelect.innerHTML = options
+      .map((v) => `<option value="${v}">${v}</option>`)
+      .join('');
+
+    rowsSelect.value = String(initialRows);
+    colsSelect.value = String(initialCols);
   }
 
   async handleGridClick(e) {
+    if (this.isIndexing) return;
     const cellElement = e.target.closest('.cell');
     if (!cellElement) return;
 
@@ -50,16 +103,21 @@ export default class Game {
     const cell = this.grid.getCell(row, col);
 
     if (!cell || !cell.element) {
-      this.clearSelection();
       return;
     }
 
     this.grid.clearHighlights();
 
+    const t0 = performance.now();
     const { group, steps } = this.groupFinder.findGroup(this.grid, row, col);
+    const findMs = performance.now() - t0;
+
     if (group.length === 0) return;
 
-    this.updateInfoPanel(row, col, cell.element, group.length);
+    this.lastSearchMs = findMs;
+    this.lastGroupSize = group.length;
+    this.totalSearchMs += findMs;
+    this.renderMetrics();
 
     const stepDelay = 20;
     for (const step of steps) {
@@ -73,8 +131,18 @@ export default class Game {
 
     this.grid.removeGroup(group);
     this.totalRemoved += group.length;
-    document.getElementById('removedCount').textContent = this.totalRemoved;
     this.currentGroup = [];
+
+    if (!this.sessionFinished && this.isGridEmpty()) {
+      this.sessionFinished = true;
+
+      this.pushResult({
+        algorithm: this.currentStrategyName,
+        gridSize: `${this.grid.rows}×${this.grid.cols}`,
+        totalSearchMs: this.totalSearchMs,
+        lastGroupSize: group.length,
+      });
+    }
   }
 
   createNewGrid() {
@@ -84,62 +152,90 @@ export default class Game {
     this.totalRemoved = 0;
 
     this.init(rows, cols);
-    this.clearInfoPanel();
-    document.getElementById('removedCount').textContent = '0';
-  }
-
-  clearSelection() {
-    this.grid.clearHighlights();
-    this.currentGroup = [];
-    this.clearInfoPanel();
   }
 
   selectAlgorithm(e) {
     this.currentStrategyName = e.target.value;
     this.groupFinder = new this.strategies[this.currentStrategyName]();
-    document.getElementById(
-      'algorithm-info'
-    ).textContent = ` ${this.currentStrategyName}`;
     this.createNewGrid();
   }
 
-  updateInfoPanel(row, col, element, groupSize) {
-    document.getElementById(
-      'selectedCell'
-    ).textContent = `[${row}, ${col}] = ${element}`;
-    document.getElementById('groupSize').textContent = groupSize;
-  }
+  renderMetrics() {
+    const totalEl = document.getElementById('totalSearchTime');
+    const lastEl = document.getElementById('lastSearchTime');
+    const sizeEl = document.getElementById('lastGroupSize');
 
-  clearInfoPanel() {
-    document.getElementById('selectedCell').textContent = '-';
-    document.getElementById('groupSize').textContent = '0';
-  }
-
-  updateGridSizeDisplay() {
-    document.getElementById(
-      'gridSize'
-    ).textContent = `${this.grid.rows}×${this.grid.cols}`;
+    if (totalEl) {
+      totalEl.textContent =
+        this.totalSearchMs > 0 ? `${this.totalSearchMs.toFixed(3)} ms` : '-';
+    }
+    if (lastEl) {
+      lastEl.textContent =
+        this.lastSearchMs != null ? `${this.lastSearchMs.toFixed(3)} ms` : '-';
+    }
+    if (sizeEl) {
+      sizeEl.textContent =
+        this.lastGroupSize != null ? String(this.lastGroupSize) : '-';
+    }
   }
 
   changeGridSize() {
-    let rows = parseInt(document.getElementById('gridRowsInput').value);
-    let cols = parseInt(document.getElementById('gridColsInput').value);
-
-    rows = Math.max(5, Math.min(45, rows));
-    cols = Math.max(5, Math.min(45, cols));
-
-    document.getElementById('gridRowsInput').value = rows;
-    document.getElementById('gridColsInput').value = cols;
+    const rows = parseInt(document.getElementById('gridRowsSelect').value);
+    const cols = parseInt(document.getElementById('gridColsSelect').value);
 
     this.currentGroup = [];
     this.totalRemoved = 0;
 
     this.init(rows, cols);
-    this.clearInfoPanel();
-    document.getElementById('removedCount').textContent = '0';
   }
 
   delay(ms) {
     return new Promise((r) => setTimeout(r, ms));
+  }
+
+  pushResult({ algorithm, gridSize, totalSearchMs, lastGroupSize }) {
+    this.lastResults.unshift({
+      at: Date.now(),
+      algorithm,
+      gridSize,
+      totalSearchMs,
+      lastGroupSize,
+    });
+    this.lastResults = this.lastResults.slice(0, 5);
+    this.renderResultsTable();
+  }
+
+  renderResultsTable() {
+    const body = document.getElementById('resultsBody');
+    if (!body) return;
+
+    if (this.lastResults.length === 0) {
+      body.innerHTML = `<tr><td colspan="5" class="muted">No results yet</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = this.lastResults
+      .map((r, idx) => {
+        return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${r.algorithm}</td>
+          <td>${r.gridSize}</td>
+          <td>${r.totalSearchMs.toFixed(3)} ms</td>
+          <td>${r.lastGroupSize ?? '-'}</td>
+        </tr>
+      `;
+      })
+      .join('');
+  }
+
+  isGridEmpty() {
+    for (let r = 0; r < this.grid.rows; r++) {
+      for (let c = 0; c < this.grid.cols; c++) {
+        const cell = this.grid.getCell(r, c);
+        if (cell && cell.element) return false;
+      }
+    }
+    return true;
   }
 }
