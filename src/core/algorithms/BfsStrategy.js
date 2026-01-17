@@ -1,4 +1,6 @@
-export default class BfsStrategy {
+import BaseSearchStrategy from './BaseSearchStrategy.js';
+
+export default class BfsStrategy extends BaseSearchStrategy {
   findGroup(grid, startRow, startCol) {
     const startCell = grid.getCell(startRow, startCol);
     if (!startCell || !startCell.element) return { group: [], steps: [] };
@@ -38,13 +40,5 @@ export default class BfsStrategy {
     }
 
     return { group, steps };
-  }
-
-  createVisitedArray(rows, cols) {
-    const visited = [];
-    for (let i = 0; i < rows; i++) {
-      visited[i] = new Array(cols).fill(false);
-    }
-    return visited;
   }
 }

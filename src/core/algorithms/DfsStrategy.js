@@ -1,4 +1,6 @@
-export default class DfsStrategy {
+import BaseSearchStrategy from './BaseSearchStrategy.js';
+
+export default class DfsStrategy extends BaseSearchStrategy {
   findGroup(grid, startRow, startCol) {
     const startCell = grid.getCell(startRow, startCol);
     if (!startCell || !startCell.element) return { group: [], steps: [] };
@@ -30,13 +32,5 @@ export default class DfsStrategy {
     this.dfs(grid, row + 1, col, target, visited, group, steps);
     this.dfs(grid, row, col - 1, target, visited, group, steps);
     this.dfs(grid, row, col + 1, target, visited, group, steps);
-  }
-
-  createVisitedArray(rows, cols) {
-    const visited = [];
-    for (let i = 0; i < rows; i++) {
-      visited[i] = new Array(cols).fill(false);
-    }
-    return visited;
   }
 }
