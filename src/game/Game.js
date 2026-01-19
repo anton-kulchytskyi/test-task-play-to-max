@@ -1,36 +1,56 @@
 import Grid from '../game/Grid.js';
 
+import MetricsTracker from './MetricsTracker.js';
+import ResultsStore from './ResultsStore.js';
+import Animator from './Animator.js';
+import UI from './UI.js';
+import GameController from './GameController.js';
+
 export default class Game {
   constructor(gridElement, strategies, initialRows = 10, initialCols = 10) {
     this.gridElement = gridElement;
     this.strategies = strategies;
-    this.currentStrategyName = 'DFS';
-    this.currentGroup = [];
-    this.totalRemoved = 0;
 
-    this.totalSearchMs = 0;
-    this.lastSearchMs = null;
-    this.lastGroupSize = null;
-    this.lastResults = [];
-    this.sessionFinished = false;
+    this.ui = new UI(gridElement);
+    this.metrics = new MetricsTracker();
+    this.results = new ResultsStore(5);
+
+    this.currentStrategyName = this.ui.getSelectedAlgorithm();
+
+    this.animator = new Animator({
+      getEnabled: () => this.ui.isVisualizationEnabled(),
+    });
+
+    this.controller = null;
+
+    this.ui.bind({
+      onCellClick: ({ row, col }) => this.handleGridClick(row, col),
+      onNewGrid: () => this.createNewGrid(),
+      onAlgorithmChange: (name) => this.selectAlgorithm(name),
+      onGridSizeChange: ({ rows, cols }) => this.changeGridSize(rows, cols),
+    });
 
     this.init(initialRows, initialCols);
-    this.setupEventListeners();
   }
 
   async init(rows, cols) {
+    this.ui.renderResults(this.results.list());
+
+    this.metrics.reset();
+    this.ui.renderMetrics(this.metrics.getViewModel());
+
     this.grid = new Grid(this.gridElement, rows, cols);
     this.groupFinder = new this.strategies[this.currentStrategyName]();
-    this.setupGridSizeSelects(rows, cols);
+
+    if (this.controller) {
+      this.controller.reset(this.grid, this.groupFinder);
+    } else {
+      this.controller = new GameController(this.grid, this.groupFinder);
+    }
+
+    this.ui.setupGridSizeSelects(rows, cols);
 
     this.grid.clearHighlights();
-
-    this.totalSearchMs = 0;
-    this.lastSearchMs = null;
-    this.lastGroupSize = null;
-    this.renderMetrics();
-
-    this.sessionFinished = false;
 
     if (typeof this.groupFinder.buildConnections === 'function') {
       this.isIndexing = true;
@@ -41,201 +61,57 @@ export default class Game {
       });
       const indexMs = performance.now() - t0;
 
-      this.totalSearchMs += indexMs;
-      this.renderMetrics();
+      this.metrics.addIndexBuild(indexMs);
+      this.ui.renderMetrics(this.metrics.getViewModel());
 
-      for (const step of steps) {
-        if (step.type === 'visit') step.cell?.markVisited();
-        await this.delay(2);
-      }
+      await this.animator.playIndexSteps(steps, {
+        visitDelay: 2,
+        afterDelay: 0,
+      });
 
       this.grid.clearHighlights();
       this.isIndexing = false;
     }
   }
 
-  setupEventListeners() {
-    this.gridElement.addEventListener('click', (e) => this.handleGridClick(e));
-
-    document
-      .getElementById('newGridBtn')
-      .addEventListener('click', () => this.createNewGrid());
-
-    document
-      .getElementById('algorithmSelector')
-      .addEventListener('change', (e) => this.selectAlgorithm(e));
-
-    document
-      .getElementById('gridRowsSelect')
-      .addEventListener('change', () => this.changeGridSize());
-
-    document
-      .getElementById('gridColsSelect')
-      .addEventListener('change', () => this.changeGridSize());
-  }
-
-  setupGridSizeSelects(initialRows, initialCols) {
-    const rowsSelect = document.getElementById('gridRowsSelect');
-    const colsSelect = document.getElementById('gridColsSelect');
-    if (!rowsSelect || !colsSelect) return;
-
-    const options = [];
-    for (let v = 5; v <= 45; v += 5) options.push(v);
-
-    rowsSelect.innerHTML = options
-      .map((v) => `<option value="${v}">${v}</option>`)
-      .join('');
-    colsSelect.innerHTML = options
-      .map((v) => `<option value="${v}">${v}</option>`)
-      .join('');
-
-    rowsSelect.value = String(initialRows);
-    colsSelect.value = String(initialCols);
-  }
-
-  async handleGridClick(e) {
+  async handleGridClick(row, col) {
     if (this.isIndexing) return;
-    const cellElement = e.target.closest('.cell');
-    if (!cellElement) return;
 
-    const row = parseInt(cellElement.dataset.row);
-    const col = parseInt(cellElement.dataset.col);
-    const cell = this.grid.getCell(row, col);
+    const result = this.controller.clickCell(row, col);
+    if (!result) return;
 
-    if (!cell || !cell.element) {
-      return;
-    }
+    this.metrics.addSearch(result.findMs, result.groupSize);
+    this.ui.renderMetrics(this.metrics.getViewModel());
 
-    this.grid.clearHighlights();
+    await this.animator.playSteps(result.steps, {
+      visitDelay: 20,
+      afterDelay: 250,
+    });
 
-    const t0 = performance.now();
-    const { group, steps } = this.groupFinder.findGroup(this.grid, row, col);
-    const findMs = performance.now() - t0;
+    this.controller.applyRemoval(result.group);
 
-    if (group.length === 0) return;
-
-    this.lastSearchMs = findMs;
-    this.lastGroupSize = group.length;
-    this.totalSearchMs += findMs;
-    this.renderMetrics();
-
-    const stepDelay = 20;
-    for (const step of steps) {
-      if (!step.cell) continue;
-      if (step.type === 'visit') step.cell.markVisited();
-      if (step.type === 'add') step.cell.markInGroup();
-      await this.delay(stepDelay);
-    }
-
-    await this.delay(250);
-
-    this.grid.removeGroup(group);
-    this.totalRemoved += group.length;
-    this.currentGroup = [];
-
-    if (!this.sessionFinished && this.isGridEmpty()) {
-      this.sessionFinished = true;
-
-      this.pushResult({
+    if (this.controller.finishSessionIfEmpty()) {
+      this.results.push({
         algorithm: this.currentStrategyName,
         gridSize: `${this.grid.rows}×${this.grid.cols}`,
-        totalSearchMs: this.totalSearchMs,
-        lastGroupSize: group.length,
+        totalSearchMs: this.metrics.getTotalMs(),
       });
+
+      this.ui.renderResults(this.results.list());
     }
   }
 
   createNewGrid() {
-    const rows = this.grid.rows;
-    const cols = this.grid.cols;
-    this.currentGroup = [];
-    this.totalRemoved = 0;
-
+    const { rows, cols } = this.ui.getGridSize();
     this.init(rows, cols);
   }
 
-  selectAlgorithm(e) {
-    this.currentStrategyName = e.target.value;
-    this.groupFinder = new this.strategies[this.currentStrategyName]();
+  selectAlgorithm(strategyName) {
+    this.currentStrategyName = strategyName;
     this.createNewGrid();
   }
 
-  renderMetrics() {
-    const totalEl = document.getElementById('totalSearchTime');
-    const lastEl = document.getElementById('lastSearchTime');
-    const sizeEl = document.getElementById('lastGroupSize');
-
-    if (totalEl) {
-      totalEl.textContent =
-        this.totalSearchMs > 0 ? `${this.totalSearchMs.toFixed(3)} ms` : '-';
-    }
-    if (lastEl) {
-      lastEl.textContent =
-        this.lastSearchMs != null ? `${this.lastSearchMs.toFixed(3)} ms` : '-';
-    }
-    if (sizeEl) {
-      sizeEl.textContent =
-        this.lastGroupSize != null ? String(this.lastGroupSize) : '-';
-    }
-  }
-
-  changeGridSize() {
-    const rows = parseInt(document.getElementById('gridRowsSelect').value);
-    const cols = parseInt(document.getElementById('gridColsSelect').value);
-
-    this.currentGroup = [];
-    this.totalRemoved = 0;
-
+  changeGridSize(rows, cols) {
     this.init(rows, cols);
-  }
-
-  delay(ms) {
-    return new Promise((r) => setTimeout(r, ms));
-  }
-
-  pushResult({ algorithm, gridSize, totalSearchMs, lastGroupSize }) {
-    this.lastResults.unshift({
-      at: Date.now(),
-      algorithm,
-      gridSize,
-      totalSearchMs,
-      lastGroupSize,
-    });
-    this.lastResults = this.lastResults.slice(0, 5);
-    this.renderResultsTable();
-  }
-
-  renderResultsTable() {
-    const body = document.getElementById('resultsBody');
-    if (!body) return;
-
-    if (this.lastResults.length === 0) {
-      body.innerHTML = `<tr><td colspan="5" class="muted">No results yet</td></tr>`;
-      return;
-    }
-
-    body.innerHTML = this.lastResults
-      .map((r, idx) => {
-        return `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${r.algorithm}</td>
-          <td>${r.gridSize}</td>
-          <td>${r.totalSearchMs.toFixed(3)} ms</td>
-          <td>${r.lastGroupSize ?? '-'}</td>
-        </tr>
-      `;
-      })
-      .join('');
-  }
-
-  isGridEmpty() {
-    for (let r = 0; r < this.grid.rows; r++) {
-      for (let c = 0; c < this.grid.cols; c++) {
-        const cell = this.grid.getCell(r, c);
-        if (cell && cell.element) return false;
-      }
-    }
-    return true;
   }
 }

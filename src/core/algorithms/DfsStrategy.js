@@ -2,13 +2,14 @@ import BaseSearchStrategy from './BaseSearchStrategy.js';
 
 export default class DfsStrategy extends BaseSearchStrategy {
   findGroup(grid, startRow, startCol) {
-    const startCell = grid.getCell(startRow, startCol);
-    if (!startCell || !startCell.element) return { group: [], steps: [] };
+    const start = this.getStartTarget(grid, startRow, startCol);
+    if (!start) return this.emptyResult();
 
-    const visited = this.createVisitedArray(grid.rows, grid.cols);
+    const { target } = start;
     const group = [];
     const steps = [];
-    const target = startCell.element;
+
+    const visited = this.createVisitedArray(grid.rows, grid.cols);
 
     this.dfs(grid, startRow, startCol, target, visited, group, steps);
 
@@ -28,9 +29,9 @@ export default class DfsStrategy extends BaseSearchStrategy {
     group.push(cell);
     steps.push({ type: 'add', cell });
 
-    this.dfs(grid, row - 1, col, target, visited, group, steps);
-    this.dfs(grid, row + 1, col, target, visited, group, steps);
-    this.dfs(grid, row, col - 1, target, visited, group, steps);
-    this.dfs(grid, row, col + 1, target, visited, group, steps);
+    const neighbors = this.getNeighbors4(row, col);
+    for (const n of neighbors) {
+      this.dfs(grid, n.row, n.col, target, visited, group, steps);
+    }
   }
 }

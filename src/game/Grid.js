@@ -91,4 +91,14 @@ export default class Grid {
     this.clearHighlights();
     group.forEach((cell) => cell.markInGroup());
   }
+
+  isEmpty() {
+    for (let r = 0; r < this.rows; r++) {
+      for (let c = 0; c < this.cols; c++) {
+        const cell = this.cells[r][c];
+        if (cell && cell.element) return false;
+      }
+    }
+    return true;
+  }
 }

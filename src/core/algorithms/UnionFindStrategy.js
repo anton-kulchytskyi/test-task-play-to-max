@@ -1,5 +1,8 @@
-export default class UnionFindStrategy {
+import BaseSearchStrategy from './BaseSearchStrategy.js';
+
+export default class UnionFindStrategy extends BaseSearchStrategy {
   constructor() {
+    super();
     this.parent = [];
     this.size = [];
     this.groups = new Map();
@@ -91,10 +94,8 @@ export default class UnionFindStrategy {
   }
 
   findGroup(grid, startRow, startCol) {
-    const startCell = grid.getCell(startRow, startCol);
-    if (!startCell || !startCell.element) {
-      return { group: [], steps: [] };
-    }
+    const start = this.getStartTarget(grid, startRow, startCol);
+    if (!start) return this.emptyResult();
 
     const root = this.find(this.getIndex(startRow, startCol));
     const group = this.groups.get(root) || [];

@@ -38,6 +38,6 @@ export default class Cell {
   }
 
   clearMarks() {
-    this.cellElement.classList.remove('visited', 'in-group', 'highlighted');
+    this.cellElement.classList.remove('visited', 'in-group');
   }
 }
